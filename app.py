@@ -4,8 +4,12 @@ from langchain.schema.document import Document
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import chromadb
 
 DATA_PATH = "data/CN Module 1 Notes -Data Communications & Networks.pdf"
+
+client = chromadb.Client()
+collection = client.create_collection(name="notes")
 
 
 def load_doc():
@@ -15,7 +19,10 @@ def load_doc():
 
 def split_doc(doc: Document):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800, chunk_overlap=80, length_function=len, is_separator_regex=False
+        chunk_size=10000,
+        chunk_overlap=1000,
+        length_function=len,
+        is_separator_regex=False,
     )
     return text_splitter.split_documents(doc)
 
@@ -27,6 +34,7 @@ def get_embedding_function():
 
 def get_embeddings(model, chunks):
     embeddings = model.encode([chunk.page_content for chunk in chunks])
+    print(embeddings)
     return embeddings
 
 
@@ -46,20 +54,27 @@ def search_embeddings(query, embeddings_with_metadata, model):
 try:
     doc = load_doc()
     chunks = split_doc(doc)
-    embeddings = get_embeddings(get_embedding_function(), chunks)
-    embeddings_with_page_numbers = []
+    embedding_model = get_embedding_function()
+    embeddings = get_embeddings(embedding_model, chunks)
+    ids = []
+    metadata = []
     for i, chunk in enumerate(chunks):
-        page_number = chunk.metadata.get("page", "Unknown")
-        embeddings_with_page_numbers.append(
-            {"embedding": embeddings[i], "page": page_number}
+        ids.append(str(i))
+        metadata.append(
+            {
+                "id": i,
+                "page": chunk.metadata["page"],
+                "content": chunk.page_content,
+            }
         )
+
+    collection.add(ids=ids, embeddings=embeddings, metadatas=metadata)
+
     query = "What are the key components in data communications?"
-    results = search_embeddings(
-        query, embeddings_with_page_numbers, get_embedding_function()
-    )
+    query_embedding = embedding_model.encode([query])
+    print(query_embedding)
+    results = collection.query(query_embedding, n_results=5)
     print(results)
-    for entry, similarity in results:
-        print(f"Page Number: {entry['page']}, Similarity: {similarity:.4f}")
 
 except Exception as e:
     print(f"An error occurred: {e}")
