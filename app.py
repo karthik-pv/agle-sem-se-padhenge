@@ -2,14 +2,13 @@ from langchain_community.document_loaders.pdf import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from sentence_transformers import SentenceTransformer
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-import chromadb
+from vector_db import FAISSVectorStore
+
 
 DATA_PATH = "data/CN Module 1 Notes -Data Communications & Networks.pdf"
 
-client = chromadb.Client()
-collection = client.create_collection(name="notes")
+
+vector_store = FAISSVectorStore(dimension=384)
 
 
 def load_doc():
@@ -38,24 +37,19 @@ def get_embeddings(model, chunks):
     return embeddings
 
 
-def search_embeddings(query, embeddings_with_metadata, model):
+def search_embeddings(query, model):
     query_embedding = model.encode([query])
-
-    embeddings = np.array([entry["embedding"] for entry in embeddings_with_metadata])
-
-    similarities = cosine_similarity(query_embedding, embeddings).flatten()
-
-    top_indices = similarities.argsort()[-5:][::-1]
-
-    results = [(embeddings_with_metadata[i], similarities[i]) for i in top_indices]
+    results = vector_store.search(query_embedding, k=5)
     return results
 
 
 try:
     doc = load_doc()
     chunks = split_doc(doc)
+
     embedding_model = get_embedding_function()
     embeddings = get_embeddings(embedding_model, chunks)
+
     ids = []
     metadata = []
     for i, chunk in enumerate(chunks):
@@ -68,13 +62,19 @@ try:
             }
         )
 
-    collection.add(ids=ids, embeddings=embeddings, metadatas=metadata)
+    vector_store.add_vectors(embeddings, metadata)
 
     query = "What are the key components in data communications?"
     query_embedding = embedding_model.encode([query])
     print(query_embedding)
-    results = collection.query(query_embedding, n_results=5)
-    print(results)
+
+    results = search_embeddings(query, vector_store.vectors, embedding_model)
+
+    for result in results:
+        print("\nResult:")
+        print("Similarity Score:", result["distance"])
+        print("Page:", result["metadata"].get("page", "N/A"))
+        print("Content Snippet:", result["metadata"].get("content", "N/A"))
 
 except Exception as e:
     print(f"An error occurred: {e}")
