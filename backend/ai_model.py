@@ -13,7 +13,7 @@ def prompt_construct(question, data):
         + "It is essential that you use the keywords and explain the concept in depth. "
         + "Answer the question that has been asked. "
         + f"QUESTION - {question} \n\n"
-        + f"DATA - {data}"
+        + f"DATA - {data}\n\n"
     )
     return prompt
 

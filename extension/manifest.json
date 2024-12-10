@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Agle Sem Se Padhenge",
+  "version": "1.0",
+  "permissions": ["activeTab", "tabs"],
+  "icons": {
+    "16": "joker16.png",
+    "48": "joker48.png",
+    "128": "joker128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "joker16.png",
+      "48": "joker48.png",
+      "128": "joker128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["file:///*.pdf"],
+      "js": ["popup.js"]
+    }
+  ]
+}

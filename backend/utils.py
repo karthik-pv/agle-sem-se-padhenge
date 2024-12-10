@@ -49,11 +49,13 @@ def get_embeddings(model, chunks):
 def search_embeddings(query, model, vector_store):
     query_embedding = model.encode([query])
     results = vector_store.search(query_embedding, k=5)
+    print(results)
     return results
 
 
 def get_file_path(file_url):
     if file_url.startswith("file://"):
+        file_url = file_url.split("#")[0]
         file_path = urllib.parse.unquote(file_url[8:])
         return file_path
     else:
@@ -85,7 +87,8 @@ def add_data_to_vector_db(vector_store, embeddings, metadata):
 def get_data_and_page_numbers(search_results):
     relevant_data = []
     page_numbers = []
-    for data in search_results:
+    sorted_results = sorted(search_results, key=lambda x: x["distance"], reverse=True)
+    for data in sorted_results:
         relevant_data.append(str(data["metadata"]["content"]))
         page_numbers.append(int(data["metadata"]["page"]))
     return relevant_data, page_numbers
