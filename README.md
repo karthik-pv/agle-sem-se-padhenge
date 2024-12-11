@@ -1,6 +1,7 @@
 <p align="center">  
   <img src="extension/joker.png" alt="Project Logo" height="300" width="400" />  
-</p>  
+</p>
+
 # Project Title
 
 Agle Sem Se Padhenge
