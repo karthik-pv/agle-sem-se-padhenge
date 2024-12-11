@@ -1,4 +1,4 @@
-![Project Logo](joker.png)
+![Project Logo](extension/joker.png)
 
 # Project Title
 
